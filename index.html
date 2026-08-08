@@ -1,103 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modernized Omegle Clone with Locked Gender Identity</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Socket.io Client -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #090d16; }
-        ::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #374151; }
-    </style>
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased h-screen overflow-hidden flex flex-col">
-
-    <div id="app" class="flex-1 flex flex-col h-full w-full relative">
-        
-        <!-- NOTIFICATION TOAST -->
-        <div id="notification-box" class="hidden fixed top-5 right-5 z-50 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-20px] opacity-0">
-            <span id="notification-text" class="text-sm">Notification message</span>
-        </div>
-
-        <!-- ONE-TIME GENDER LOCK MODAL -->
-        <div id="gender-lock-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-            <div class="w-full max-w-md p-8 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 text-center space-y-6">
-                <div>
-                    <div class="inline-block p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl text-indigo-400 mb-3">
-                        <i data-lucide="shield-alert" class="w-8 h-8"></i>
-                    </div>
-                    <h2 class="text-2xl font-black text-white tracking-tight">Select Your Gender</h2>
-                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-                        Please select your gender identity below. <span class="text-amber-400 font-semibold">This choice is permanent</span> and cannot be changed once confirmed for this session/browser profile.
-                    </p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <button type="button" onclick="selectLockedGender('male')" class="p-4 bg-slate-950 hover:bg-indigo-600/20 border border-slate-700 hover:border-indigo-500 rounded-2xl font-bold transition flex flex-col items-center justify-center gap-2 group">
-                        <i data-lucide="user" class="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform"></i>
-                        <span>Male</span>
-                    </button>
-                    <button type="button" onclick="selectLockedGender('female')" class="p-4 bg-slate-950 hover:bg-pink-600/20 border border-slate-700 hover:border-pink-500 rounded-2xl font-bold transition flex flex-col items-center justify-center gap-2 group">
-                        <i data-lucide="user" class="w-6 h-6 text-pink-400 group-hover:scale-110 transition-transform"></i>
-                        <span>Female</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- AUTH MODAL / VIEW -->
-        <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="w-full max-w-md p-8 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 relative">
-                <button onclick="toggleAuthModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-                <div class="text-center mb-6">
-                    <h1 class="text-2xl font-extrabold text-indigo-400 tracking-tight">Account Required</h1>
-                    <p id="auth-subtitle" class="text-xs text-slate-400 mt-1">Log in or sign up to add friends and unlock persistent features.</p>
-                </div>
-
-                <form id="auth-form" class="space-y-4">
-                    <div id="email-field-container">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Email Address</label>
-                        <input type="email" id="auth-email" placeholder="name@example.com" class="w-full p-3 bg-slate-950 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm">
-                    </div>
-                    <div id="password-field-container">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
-                        <input type="password" id="auth-password" placeholder="••••••••" class="w-full p-3 bg-slate-950 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm">
-                    </div>
-                    <div id="code-field-container" class="hidden">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">6-Digit Verification Code</label>
-                        <input type="text" id="auth-code" placeholder="123456" maxlength="6" class="w-full p-3 bg-slate-950 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-center tracking-widest text-lg font-mono">
-                    </div>
-
-                    <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-semibold transition shadow-lg shadow-indigo-600/20 text-sm">Login</button>
-                </form>
-
-                <div class="mt-6 text-center text-xs text-slate-400">
-                    <p id="auth-switch-text">Don't have an account? <button type="button" id="auth-switch-btn" class="text-indigo-400 font-semibold underline hover:text-indigo-300">Sign Up</button></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- MAIN DASHBOARD VIEW -->
-        <div id="dashboard-view" class="flex-1 flex h-full overflow-hidden w-full">
-            
-            <!-- Left Side / Main Arena -->
-            <div class="flex-1 flex flex-col h-full bg-slate-950 relative">
-                
-                <!-- LANDING SUB-VIEW -->
-                <div id="subview-landing" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                    <div class="max-w-xl space-y-6">
-                        <div class="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 text-xs font-semibold mb-2">Instant Guest Access - Free Chat Without Account</div>
-                        <h2 class="text-4xl font-black tracking-tight text-white">Connect Anonymously</h2>
-                        <p class="text-slate-400 text-sm">Your verified identity is locked as <span id="locked-gender-badge" class="px-2 py-0.5 bg-slate-900 border border-slate-700 text-indigo-400 rounded-md font-bold uppercase text-xs">Loading...</span>. Select a chat mode below to connect instantly.</p>
-                        
-                        <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4">
                             <button onclick="startQueue('text')" class="flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition shadow-lg shadow-blue-600/20 gap-3">
                                 <i data-lucide="message-square" class="w-5 h-5"></i> Text Chat Only
                             </button>
@@ -121,7 +21,7 @@
                     <div class="flex justify-between items-center px-6 py-3 bg-slate-900 border-b border-slate-800">
                         <div class="flex items-center gap-2">
                             <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span id="chat-mode-label" class="font-bold text-xs uppercase tracking-wider text-slate-300">Mode: Text</span>
+                            <span id="chat-mode-label" class="-bold text-xs uppercase tracking-wider text-slate-300">Mode: Text</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="sendFriendRequest()" class="flex items-center px-3 py-1.5 bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-400 rounded-xl font-semibold text-xs transition gap-1.5">
